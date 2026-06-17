@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SP/AP Lead Dashboard – Oro Corp</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter','Segoe UI',sans-serif; background:#f5f6fa; color:#1a1a2e; font-size:13px; }
+
+.header {
+  background:#1a1a2e; color:#fff;
+  padding:14px 24px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.header h1 { font-size:15px; font-weight:600; }
+.header-right { display:flex; align-items:center; gap:12px; }
+.refresh-time { font-size:11px; color:#9ca3af; }
+.btn-refresh {
+  background:#f59e0b; color:#1a1a2e; border:none;
+  padding:6px 14px; border-radius:6px; font-size:12px;
+  font-weight:600; cursor:pointer; transition:background .15s;
+}
+.btn-refresh:hover { background:#d97706; }
+.btn-refresh:disabled { opacity:.5; cursor:not-allowed; }
+
+.main { padding:20px 24px; }
+
+/* Summary cards */
+.summary-row {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:14px; margin-bottom:20px;
+}
+.card {
+  background:#fff; border-radius:10px;
+  padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,.07);
+}
+.card-label { font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.card-value { font-size:28px; font-weight:700; color:#1a1a2e; line-height:1; }
+.card-sub   { font-size:11px; color:#9ca3af; margin-top:4px; }
+.card.gold  { border-top:3px solid #f59e0b; }
+.card.blue  { border-top:3px solid #3b82f6; }
+.card.green { border-top:3px solid #10b981; }
+.card.purple{ border-top:3px solid #8b5cf6; }
+
+/* Breakdown */
+.breakdown-row {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:14px; margin-bottom:20px;
+}
+@media(max-width:640px){ .breakdown-row{ grid-template-columns:1fr; } }
+.breakdown-card {
+  background:#fff; border-radius:10px;
+  padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,.07);
+}
+.breakdown-title { font-size:12px; font-weight:600; color:#374151; margin-bottom:12px; }
+
+.bar-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+.bar-label { width:130px; font-size:12px; color:#374151; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
+.bar-track { flex:1; background:#f3f4f6; border-radius:4px; height:8px; }
+.bar-fill  { border-radius:4px; height:8px; transition:width .4s ease; }
+.bar-fill.blue   { background:#3b82f6; }
+.bar-fill.gold   { background:#f59e0b; }
+.bar-fill.green  { background:#10b981; }
+.bar-fill.purple { background:#8b5cf6; }
+.bar-count { width:38px; text-align:right; font-size:12px; color:#6b7280; flex-shrink:0; }
+
+/* Team pills */
+.pill-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+.pill {
+  padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;
+}
+.pill.sales      { background:#dbeafe; color:#1d4ed8; }
+.pill.appraisal  { background:#dcfce7; color:#166534; }
+.pill.other      { background:#f3f4f6; color:#374151; }
+
+/* Table */
+.table-card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,.07); overflow:hidden; }
+.table-header {
+  padding:14px 18px; display:flex; align-items:center;
+  justify-content:space-between; border-bottom:1px solid #f3f4f6; flex-wrap:wrap; gap:8px;
+}
+.table-title { font-size:13px; font-weight:600; color:#1a1a2e; }
+.table-count { font-size:11px; color:#9ca3af; }
+.search-box {
+  border:1px solid #e5e7eb; border-radius:6px;
+  padding:5px 10px; font-size:12px; outline:none; width:200px;
+}
+.search-box:focus { border-color:#3b82f6; }
+
+/* City filter pills */
+.filter-row { padding:10px 18px; border-bottom:1px solid #f3f4f6; display:flex; flex-wrap:wrap; gap:6px; }
+.filter-pill {
+  padding:3px 10px; border-radius:12px; font-size:11px; font-weight:500;
+  border:1px solid #e5e7eb; background:#fff; color:#374151; cursor:pointer;
+  transition:all .15s;
+}
+.filter-pill:hover { border-color:#3b82f6; color:#3b82f6; }
+.filter-pill.active { background:#1a1a2e; color:#fff; border-color:#1a1a2e; }
+
+.table-wrap { overflow-x:auto; max-height:400px; overflow-y:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+thead th {
+  background:#f9fafb; padding:9px 14px; text-align:left;
+  font-weight:600; color:#374151; border-bottom:1px solid #e5e7eb;
+  white-space:nowrap; position:sticky; top:0; z-index:1;
+}
+tbody tr { border-bottom:1px solid #f3f4f6; transition:background .1s; }
+tbody tr:hover { background:#f9fafb; }
+tbody td { padding:8px 14px; color:#374151; white-space:nowrap; }
+
+/* Status badge */
+.badge {
+  display:inline-block; padding:2px 8px; border-radius:10px;
+  font-size:11px; font-weight:600;
+}
+.badge.active     { background:#dcfce7; color:#166534; }
+.badge.relieved   { background:#fef9c3; color:#854d0e; }
+.badge.abscond    { background:#fee2e2; color:#991b1b; }
+.badge.terminated { background:#fce7f3; color:#9d174d; }
+.badge.other      { background:#f3f4f6; color:#374151; }
+
+/* Loader */
+.state-overlay {
+  display:flex; align-items:center; justify-content:center;
+  padding:60px; color:#9ca3af; font-size:13px;
+  flex-direction:column; gap:10px;
+}
+.spinner {
+  width:28px; height:28px;
+  border:3px solid #e5e7eb; border-top-color:#3b82f6;
+  border-radius:50%; animation:spin .7s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.error-msg {
+  color:#ef4444; background:#fef2f2; padding:14px 18px;
+  border-radius:8px; font-size:12px; margin-bottom:16px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⬡ Oro Corp — SP/AP Lead Dashboard</h1>
+  <div class="header-right">
+    <span class="refresh-time" id="refresh-time">Loading…</span>
+    <button class="btn-refresh" id="btn-refresh" onclick="forceRefresh()">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <div id="error-box" class="error-msg" style="display:none"></div>
+
+  <!-- Summary cards -->
+  <div class="summary-row">
+    <div class="card gold">
+      <div class="card-label">Total Leads</div>
+      <div class="card-value" id="total-leads">–</div>
+      <div class="card-sub">All SP/AP combined</div>
+    </div>
+    <div class="card blue">
+      <div class="card-label">Cities</div>
+      <div class="card-value" id="total-cities">–</div>
+      <div class="card-sub">From G Sheet mapping</div>
+    </div>
+    <div class="card green">
+      <div class="card-label">Clusters</div>
+      <div class="card-value" id="total-clusters">–</div>
+      <div class="card-sub">Active clusters</div>
+    </div>
+    <div class="card purple">
+      <div class="card-label">Top City</div>
+      <div class="card-value" id="top-city" style="font-size:18px;padding-top:6px">–</div>
+      <div class="card-sub" id="top-city-count"></div>
+    </div>
+  </div>
+
+  <!-- Team + Status row -->
+  <div class="breakdown-row" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="breakdown-card">
+      <div class="breakdown-title">Leads by Team</div>
+      <div id="team-pills" class="pill-row">
+        <div class="state-overlay" style="padding:20px"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <div class="breakdown-card">
+      <div class="breakdown-title">Leads by City</div>
+      <div id="city-bars"><div class="state-overlay" style="padding:20px"><div class="spinner"></div></div></div>
+    </div>
+    <div class="breakdown-card">
+      <div class="breakdown-title">Leads by Cluster</div>
+      <div id="cluster-bars"><div class="state-overlay" style="padding:20px"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-header">
+      <span class="table-title">Lead Details <span class="table-count" id="table-count"></span></span>
+      <input class="search-box" id="search-box" type="text"
+             placeholder="Search name, city, cluster…" oninput="filterTable()">
+    </div>
+    <div class="filter-row" id="city-filters"></div>
+    <div class="table-wrap">
+      <div id="table-container">
+        <div class="state-overlay"><div class="spinner"></div><span>Fetching data…</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let allRows = [];
+let allCols = [];
+let activeCity = "All";
+
+async function loadData() {
+  try {
+    const res  = await fetch('/api/data');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Unknown error');
+
+    document.getElementById('error-box').style.display = 'none';
+    document.getElementById('refresh-time').textContent = 'Updated: ' + data.refreshed_at;
+
+    // Summary cards
+    document.getElementById('total-leads').textContent    = data.total_leads.toLocaleString();
+    document.getElementById('total-cities').textContent   = data.city_summary.length;
+    document.getElementById('total-clusters').textContent = data.cluster_summary.length;
+    if (data.city_summary.length) {
+      const top = data.city_summary[0];
+      const key = Object.keys(top).find(k => k !== 'leads');
+      document.getElementById('top-city').textContent       = top[key] || '–';
+      document.getElementById('top-city-count').textContent = top.leads + ' leads';
+    }
+
+    // Team pills
+    const teamEl = document.getElementById('team-pills');
+    if (data.team_summary && data.team_summary.length) {
+      const teamKey = Object.keys(data.team_summary[0]).find(k => k !== 'count');
+      teamEl.innerHTML = data.team_summary.map(t => {
+        const name  = (t[teamKey] || '').toLowerCase();
+        const cls   = name.includes('sales') ? 'sales' : name.includes('appraisal') ? 'appraisal' : 'other';
+        return `<span class="pill ${cls}">${t[teamKey]}: ${t.count}</span>`;
+      }).join('');
+    } else {
+      teamEl.innerHTML = '<span style="color:#9ca3af;font-size:12px">No data</span>';
+    }
+
+    // Bars
+    renderBars('city-bars',    data.city_summary,    'blue');
+    renderBars('cluster-bars', data.cluster_summary, 'gold');
+
+    // City filter pills
+    buildCityFilters(data.city_summary);
+
+    // Table
+    allRows = data.table;
+    allCols = data.columns;
+    activeCity = "All";
+    filterTable();
+
+  } catch(e) {
+    document.getElementById('error-box').textContent = '⚠ Error: ' + e.message;
+    document.getElementById('error-box').style.display = 'block';
+  }
+}
+
+function renderBars(id, items, color) {
+  const el = document.getElementById(id);
+  if (!items || !items.length) { el.innerHTML = '<div style="color:#9ca3af;font-size:12px;padding:8px 0">No data</div>'; return; }
+  const labelKey = Object.keys(items[0]).find(k => k !== 'leads');
+  const max = Math.max(...items.map(i => i.leads));
+  el.innerHTML = items.slice(0, 10).map(item => `
+    <div class="bar-row">
+      <div class="bar-label" title="${item[labelKey]}">${item[labelKey] || '–'}</div>
+      <div class="bar-track">
+        <div class="bar-fill ${color}" style="width:${Math.round((item.leads/max)*100)}%"></div>
+      </div>
+      <div class="bar-count">${item.leads}</div>
+    </div>`).join('');
+}
+
+function buildCityFilters(citySummary) {
+  const el = document.getElementById('city-filters');
+  const labelKey = citySummary.length ? Object.keys(citySummary[0]).find(k => k !== 'leads') : null;
+  const cities = citySummary.map(c => c[labelKey]).filter(Boolean);
+  el.innerHTML = ['All', ...cities].map(c =>
+    `<span class="filter-pill ${c === activeCity ? 'active' : ''}"
+           onclick="setCity('${c}')">${c}</span>`
+  ).join('');
+}
+
+function setCity(city) {
+  activeCity = city;
+  document.querySelectorAll('.filter-pill').forEach(p => {
+    p.classList.toggle('active', p.textContent === city);
+  });
+  filterTable();
+}
+
+function filterTable() {
+  const q = document.getElementById('search-box').value.toLowerCase();
+  let rows = allRows;
+
+  if (activeCity !== "All") {
+    rows = rows.filter(r => {
+      const val = String(r["Final City"] || r["City"] || "").trim();
+      return val === activeCity;
+    });
+  }
+
+  if (q) {
+    rows = rows.filter(row =>
+      allCols.some(c => String(row[c] ?? '').toLowerCase().includes(q))
+    );
+  }
+
+  renderTable(rows);
+}
+
+function renderTable(rows) {
+  document.getElementById('table-count').textContent = '— ' + rows.length + ' rows';
+  const el = document.getElementById('table-container');
+  if (!rows.length) {
+    el.innerHTML = '<div class="state-overlay">No records found</div>';
+    return;
+  }
+
+  const colLabels = {
+    "Created @":       "Created",
+    "Sp/Ap Name":      "SP/AP Name",
+    "emply_id":        "Emp ID",
+    "Final City":      "City (Final)",
+    "Cluster mapping": "Cluster",
+    "Team":            "Team",
+    "Status":          "Status",
+  };
+
+  const header = allCols.map(c =>
+    `<th>${colLabels[c] || c}</th>`
+  ).join('');
+
+  const body = rows.map(row => {
+    const cells = allCols.map(c => {
+      const val = row[c] ?? '';
+      if (c === 'Status') {
+        const cls = val.toLowerCase().includes('active') ? 'active'
+                  : val.toLowerCase().includes('reliev') ? 'relieved'
+                  : val.toLowerCase().includes('abscond') ? 'abscond'
+                  : val.toLowerCase().includes('terminat') ? 'terminated'
+                  : 'other';
+        return `<td><span class="badge ${cls}">${val || '–'}</span></td>`;
+      }
+      return `<td>${val || '–'}</td>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  el.innerHTML = `<table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+async function forceRefresh() {
+  const btn = document.getElementById('btn-refresh');
+  btn.disabled = true; btn.textContent = '…';
+  await fetch('/api/refresh', { method: 'POST' });
+  await loadData();
+  btn.disabled = false; btn.textContent = '↻ Refresh';
+}
+
+loadData();
+setInterval(loadData, 300000);  // auto-refresh every 5 min
+</script>
+</body>
+</html>
