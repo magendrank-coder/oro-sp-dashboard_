@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: oro-sp-dashboard
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: METABASE_URL
+        value: https://metabase-mcp.orocorp.in
+      - key: METABASE_CARD_ID
+        value: "12868"
+      - key: METABASE_USER
+        sync: false
+      - key: METABASE_PASSWORD
+        sync: false
+      - key: GSHEET_CSV_URL
+        value: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQtiRbYV5DOKXuB2K6OU2H0P85ums8C6Rm6ZRo39wrXCQjWZOqNyGrUxFLP3EIk8vFhU74WtPsPRryK/pub?gid=774636387&single=true&output=csv"
+      - key: MB_JOIN_COL
+        value: "emply_id"
+      - key: GS_JOIN_COL
+        value: "Emp ID"
